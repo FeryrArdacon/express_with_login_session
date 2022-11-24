@@ -1,0 +1,20 @@
+{
+  "name": "pathfinder-zauber",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "body-parser": "^1.20.1",
+    "cookie-parser": "^1.4.6",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "express-basic-auth": "^1.2.1",
+    "http-proxy-middleware": "^2.0.6",
+    "uuid": "^9.0.0"
+  }
+}
