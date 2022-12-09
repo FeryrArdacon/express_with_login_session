@@ -55,6 +55,6 @@ app.get("/impressum", (_, res) => {
 const key = fs.readFileSync("server.key");
 const cert = fs.readFileSync("server.cert");
 https.createServer({ key, cert }, app).listen(port, (error) => {
-  if (err) console.log("Error: ", error);
+  if (error) console.log("Error: ", error);
   else console.log("Server is up on port: ", port);
 });
