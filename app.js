@@ -1,23 +1,35 @@
 #!/usr/bin/env node
+// Server
 const https = require("https");
-const fs = require("fs");
 const express = require("express");
 const { Router } = require("express");
+
+// Middleware
 const cookieParser = require("cookie-parser");
-const path = require("path");
-const { createReadStream } = require("fs");
-const { v4: uuidv4 } = require("uuid");
 const bodyParser = require("body-parser");
 
+// Filesystem handling
+const fs = require("fs/promise");
+const { createReadStream } = require("fs");
+const path = require("path");
+
+// Session
+const { v4: uuidv4 } = require("uuid");
+
+// Read environment variables from .env-file
 require("dotenv").config();
 
 class Session {
   constructor(username, expiresAt) {
     this.username = username;
     this.expiresAt = expiresAt;
+    this.token = uuidv4();
+  }
+  
+  getToken() {
+    return this.token;
   }
 
-  // we'll use this method later to determine if the session has expired
   isExpired() {
     this.expiresAt < new Date();
   }
@@ -25,6 +37,16 @@ class Session {
 
 // this object stores the users sessions. For larger scale applications, you can use a database or cache for this purpose
 const sessions = {};
+let users = {};
+
+setInterval(async () => {
+  try {
+    const usersFileContent = await fs.readFile(process.env.USERS_FILE);
+    users = JSON.parse(usersFileContent);
+  } catch (oError) {
+    console.error(oError);
+  }
+}, 3 * 60 * 1000);
 
 const authenticator = (req, res, next) => {
   if (req.cookies) {
@@ -48,9 +70,6 @@ const authenticator = (req, res, next) => {
     }
   }
 
-  const usersFileContent = fs.readFileSync(process.env.USERS_FILE);
-  const users = JSON.parse(usersFileContent);
-
   const { user, password, savesession } = req.body;
 
   const expectedPassword = users[user];
@@ -59,9 +78,6 @@ const authenticator = (req, res, next) => {
     createReadStream("login-declined.html").pipe(res);
     return;
   }
-
-  // generate a random UUID as the session token
-  const sessionToken = uuidv4();
 
   // set the expiry time as 120s after the current time
   const now = new Date();
@@ -73,9 +89,9 @@ const authenticator = (req, res, next) => {
   // create a session containing information about the user and expiry time
   const session = new Session(user, expiresAt);
   // add the session information to the sessions map
-  sessions[sessionToken] = session;
+  sessions[session.getToken()] = session;
 
-  res.cookie("session_token", sessionToken, { expires: expiresAt });
+  res.cookie("session_token", session.getToken(), { expires: expiresAt });
   req.method = "GET";
   next();
 };
