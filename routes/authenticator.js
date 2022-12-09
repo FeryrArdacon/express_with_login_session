@@ -20,26 +20,29 @@ function createAuthenticator(userFile, failedLoginPagePath) {
   readUsers();
   setInterval(readUsers, 3 * 60 * 1000);
 
+  function processSessionValid(sessionToken) {
+    if (sessionToken && sessions[sessionToken]) {
+      return false;
+    }
+
+    if (!sessions[sessionToken].isExpired()) {
+      return true;
+    } else {
+      // delete session if not valid
+      delete sessions[sessionToken];
+    }
+
+    return false;
+  }
+
   // route for authentication
   function authenticator(req, res, next) {
     if (req.cookies) {
       // We can obtain the session token from the requests cookies, which come with every request
       const sessionToken = req.cookies["session_token"];
-      if (
-        sessionToken &&
-        sessions[sessionToken] &&
-        !sessions[sessionToken].isExpired()
-      ) {
+      if (processSessionValid(sessionToken)) {
         next();
         return;
-      }
-
-      if (
-        sessionToken &&
-        sessions[sessionToken] &&
-        sessions[sessionToken].isExpired()
-      ) {
-        delete sessions[sessionToken];
       }
     }
 
@@ -71,30 +74,15 @@ function createAuthenticator(userFile, failedLoginPagePath) {
 
   // route for redirecting if sessions is valid
   function redirectOnAuthOk(req, res, next) {
-    if (req.cookies) {
-      const sessionToken = req.cookies["session_token"];
+    if (!req.cookies) next();
 
-      // redirect if session is valid
-      if (
-        sessionToken &&
-        sessions[sessionToken] &&
-        !sessions[sessionToken].isExpired()
-      ) {
-        res.redirect("/app");
-        return;
-      }
+    const sessionToken = req.cookies["session_token"];
 
-      // delete session if not valid
-      if (
-        sessionToken &&
-        sessions[sessionToken] &&
-        sessions[sessionToken].isExpired()
-      ) {
-        delete sessions[sessionToken];
-      }
+    // redirect if session is valid
+    if (processSessionValid(sessionToken)) {
+      res.redirect("/app");
+      return;
     }
-
-    next();
   }
 
   return { authenticator, redirectOnAuthOk };
