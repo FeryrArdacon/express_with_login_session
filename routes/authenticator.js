@@ -3,10 +3,10 @@ const { createReadStream } = require("fs");
 const Session = require("../session/session");
 
 function createAuthenticator(userFile, failedLoginPagePath) {
-  // this object stores the users sessions. For larger scale applications, you can use a database or cache for this purpose
   const sessions = {};
   let users = {};
 
+  // function for loading users from file
   async function readUsers() {
     try {
       const usersFileContent = await fs.readFile(userFile);
@@ -16,9 +16,11 @@ function createAuthenticator(userFile, failedLoginPagePath) {
     }
   }
 
+  // read users and set re-reading every 3 minutes
   readUsers();
   setInterval(readUsers, 3 * 60 * 1000);
 
+  // route for authentication
   function authenticator(req, res, next) {
     if (req.cookies) {
       // We can obtain the session token from the requests cookies, which come with every request
@@ -41,16 +43,17 @@ function createAuthenticator(userFile, failedLoginPagePath) {
       }
     }
 
+    // get login page parameters from body
     const { user, password, savesession } = req.body;
 
+    // check if password is valid for user
     const expectedPassword = users[user];
-
     if (!expectedPassword || expectedPassword !== password) {
       createReadStream(failedLoginPagePath).pipe(res);
       return;
     }
 
-    // set the expiry time as 120s after the current time
+    // set the expiry time as 90 days or 3 hours after the current time
     const now = new Date();
     const sessionDuration = savesession
       ? 90 * 24 * 60 * 60 * 1000
@@ -59,7 +62,6 @@ function createAuthenticator(userFile, failedLoginPagePath) {
 
     // create a session containing information about the user and expiry time
     const session = new Session(user, expiresAt);
-    // add the session information to the sessions map
     sessions[session.getToken()] = session;
 
     res.cookie("session_token", session.getToken(), { expires: expiresAt });
@@ -67,10 +69,12 @@ function createAuthenticator(userFile, failedLoginPagePath) {
     next();
   }
 
+  // route for redirecting if sessions is valid
   function redirectOnAuthOk(req, res, next) {
     if (req.cookies) {
-      // We can obtain the session token from the requests cookies, which come with every request
       const sessionToken = req.cookies["session_token"];
+
+      // redirect if session is valid
       if (
         sessionToken &&
         sessions[sessionToken] &&
@@ -80,6 +84,7 @@ function createAuthenticator(userFile, failedLoginPagePath) {
         return;
       }
 
+      // delete session if not valid
       if (
         sessionToken &&
         sessions[sessionToken] &&

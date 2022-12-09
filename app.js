@@ -26,16 +26,19 @@ const { authenticator, redirectOnAuthOk } = createAuthenticator(
 const app = express();
 const port = 2555;
 
+// Set global middleware
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: false })); // to parse the data sent by the client
+app.use(redirectOnAuthOk);
 
+// Set specific middleware
 app.use("/app", authenticator);
 app.use(
   "/app",
   express.static(path.join(process.env.STATIC_APP_SOURCE, "dist"))
 );
 
-app.use("/", redirectOnAuthOk);
+// Set static routes
 app.get("/", (_, res) => {
   createReadStream("static/login.html").pipe(res);
 });
@@ -48,18 +51,10 @@ app.get("/impressum", (_, res) => {
   createReadStream("static/impressum.html").pipe(res);
 });
 
-https
-  .createServer(
-    {
-      key: fs.readFileSync("server.key"),
-      cert: fs.readFileSync("server.cert"),
-    },
-    app
-  )
-  .listen(port, (err) => {
-    if (err) {
-      console.log("Error: ", err);
-    } else {
-      console.log("Server is up on port: ", port);
-    }
-  });
+// Create and start server
+const key = fs.readFileSync("server.key");
+const cert = fs.readFileSync("server.cert");
+https.createServer({ key, cert }, app).listen(port, (error) => {
+  if (err) console.log("Error: ", error);
+  else console.log("Server is up on port: ", port);
+});
