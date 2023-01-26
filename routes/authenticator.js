@@ -21,7 +21,7 @@ function createAuthenticator(userFile, failedLoginPagePath) {
   setInterval(readUsers, 3 * 60 * 1000);
 
   function processSessionValid(sessionToken) {
-    if (sessionToken && sessions[sessionToken]) {
+    if (!sessionToken || !sessions[sessionToken]) {
       return false;
     }
 
@@ -74,7 +74,10 @@ function createAuthenticator(userFile, failedLoginPagePath) {
 
   // route for redirecting if sessions is valid
   function redirectOnAuthOk(req, res, next) {
-    if (!req.cookies) next();
+    if (!req.cookies) {
+      next();
+      return;
+    }
 
     const sessionToken = req.cookies["session_token"];
 
@@ -83,6 +86,8 @@ function createAuthenticator(userFile, failedLoginPagePath) {
       res.redirect("/app");
       return;
     }
+
+    next();
   }
 
   return { authenticator, redirectOnAuthOk };

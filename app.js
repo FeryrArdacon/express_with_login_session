@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Server
-const https = require("https");
+const http2 = require("http2");
+const http2Express = require("http2-express-bridge");
 const express = require("express");
 
 // Middleware
@@ -23,7 +24,7 @@ const { authenticator, redirectOnAuthOk } = createAuthenticator(
   "static/login-declined.html"
 );
 
-const app = express();
+const app = http2Express(express);
 const port = 2555;
 
 // Set global middleware
@@ -52,9 +53,13 @@ app.get("/impressum", (_, res) => {
 });
 
 // Create and start server
-const key = fs.readFileSync("server.key");
-const cert = fs.readFileSync("server.cert");
-https.createServer({ key, cert }, app).listen(port, (error) => {
+const options = {
+  key: fs.readFileSync("server.key"),
+  cert: fs.readFileSync("server.cert"),
+  allowHTTP1: true,
+};
+
+http2.createSecureServer(options, app).listen(port, (error) => {
   if (error) console.log("Error: ", error);
   else console.log("Server is up on port: ", port);
 });
