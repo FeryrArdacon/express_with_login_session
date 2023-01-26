@@ -79,6 +79,11 @@ function createAuthenticator(userFile, failedLoginPagePath) {
       return;
     }
 
+    if (req.originalUrl.includes("/app")) {
+      next();
+      return;
+    }
+
     const sessionToken = req.cookies["session_token"];
 
     // redirect if session is valid
