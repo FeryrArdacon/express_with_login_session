@@ -29,7 +29,7 @@ const app = http2Express(express);
 const port = 2555;
 
 // Set global middleware
-app.use(compression());
+app.use(compression({ level: 2 }));
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: false })); // to parse the data sent by the client
 app.use(redirectOnAuthOk);
