@@ -3,9 +3,10 @@
 const http2 = require("http2");
 const http2Express = require("http2-express-bridge");
 const express = require("express");
-const compression = require("http-compression");
 
 // Middleware
+const helmet = require("helmet");
+const compression = require("http-compression");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 
@@ -29,6 +30,7 @@ const app = http2Express(express);
 const port = 2555;
 
 // Set global middleware
+app.use(helmet())
 app.use(compression({ level: 2 }));
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: false })); // to parse the data sent by the client
