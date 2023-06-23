@@ -13,7 +13,7 @@ class Session {
   }
 
   isExpired() {
-    this.expiresAt < new Date();
+    this.expiresAt.getTime() < new Date().getTime();
   }
 }
 

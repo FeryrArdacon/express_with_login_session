@@ -61,13 +61,13 @@ function createAuthenticator(userFile, failedLoginPagePath) {
     const sessionDuration = savesession
       ? 90 * 24 * 60 * 60 * 1000
       : 3 * 60 * 60 * 1000;
-    const expiresAt = new Date(+now + sessionDuration);
+    const expiresAt = new Date(now.getTime() + sessionDuration);
 
     // create a session containing information about the user and expiry time
     const session = new Session(user, expiresAt);
     sessions[session.getToken()] = session;
 
-    res.cookie("session_token", session.getToken(), { expires: expiresAt });
+    res.cookie("session_token", session.getToken(), { expires: expiresAt, sameSite: "strict", secure: true, httpOnly: true });
     req.method = "GET";
     next();
   }
