@@ -30,7 +30,16 @@ const app = http2Express(express);
 const port = 2555;
 
 // Set global middleware
-app.use(helmet())
+
+// Helmet-Konfiguration
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Deaktiviere standardmäßige Content Security Policy (CSP)
+    noSniff: false, // Deaktiviere 'X-Content-Type-Options: nosniff'
+    noCache: false, // Deaktiviere 'Cache-Control' und 'Pragma' Header
+  })
+);
+
 app.use(compression({ level: 2 }));
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: false })); // to parse the data sent by the client
