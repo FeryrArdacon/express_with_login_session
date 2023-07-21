@@ -17,6 +17,7 @@ const path = require("path");
 
 // Routes
 const createAuthenticator = require("./routes/authenticator");
+const createMaintenanceRoute = require("./routes/maintenance");
 
 // Read environment variables from .env-file
 require("dotenv").config();
@@ -24,6 +25,11 @@ require("dotenv").config();
 const { authenticator, redirectOnAuthOk } = createAuthenticator(
   process.env.USERS_FILE,
   "static/login-declined.html"
+);
+
+const { maintenance } = createMaintenanceRoute(
+  process.env.MAINTENANCE_FILE,
+  "static/maintenance.html"
 );
 
 const app = http2Express(express);
@@ -44,6 +50,7 @@ app.use(compression({ level: 2 }));
 app.use(cookieParser());
 app.use(bodyParser.urlencoded({ extended: false })); // to parse the data sent by the client
 app.use(redirectOnAuthOk);
+app.use(maintenance);
 
 // Set specific middleware
 app.use("/app", authenticator);
