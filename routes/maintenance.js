@@ -1,26 +1,14 @@
-const fs = require("fs/promises");
 const { createReadStream } = require("fs");
+const connector = require("../db/connector");
 
-function createMaintenanceRoute(maintenanceFile, maintenancePagePath) {
-  let maintenanceState = { maintenance: false };
+function createMaintenanceRoute(maintenancePagePath) {
+  // route for maintenance
+  async function maintenance(_req, res, next) {
+    const oConnection = await connector();
+    const isMaintenance = await oConnection.isMaintenance();
+    await oConnection.end();
 
-  // function for loading maintenance state from file
-  async function readMaintenanceState() {
-    try {
-      const maintenanceFileContent = await fs.readFile(maintenanceFile);
-      maintenanceState = JSON.parse(maintenanceFileContent);
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  // read maintenance state and set re-reading every minutes
-  readMaintenanceState();
-  setInterval(readMaintenanceState, 1 * 60 * 1000);
-
-  // route for authentication
-  function maintenance(_req, res, next) {
-    if (maintenanceState.isMaintenance) {
+    if (isMaintenance) {
       createReadStream(maintenancePagePath).pipe(res);
       return;
     }

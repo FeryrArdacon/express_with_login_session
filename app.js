@@ -27,10 +27,7 @@ const { authenticator, redirectOnAuthOk } = createAuthenticator(
   "static/login-declined.html"
 );
 
-const { maintenance } = createMaintenanceRoute(
-  process.env.MAINTENANCE_FILE,
-  "static/maintenance.html"
-);
+const { maintenance } = createMaintenanceRoute("static/maintenance.html");
 
 const app = http2Express(express);
 const port = 2555;
