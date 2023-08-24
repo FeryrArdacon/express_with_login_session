@@ -16,6 +16,7 @@
     "http-compression": "^1.0.7",
     "http2-express-bridge": "^1.0.7",
     "uuid": "^9.0.0",
-    "helmet": "^7.0.0"
+    "helmet": "^7.0.0",
+    "mysql2": "^3.6.0"
   }
 }
