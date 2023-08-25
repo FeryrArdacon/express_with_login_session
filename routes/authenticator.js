@@ -1,42 +1,30 @@
-const fs = require("fs/promises");
 const { createReadStream } = require("fs");
 const Session = require("../session/session");
+const connector = require("../db/connector");
 
-function createAuthenticator(userFile, failedLoginPagePath) {
-  const sessions = {};
-  let users = {};
-
-  // function for loading users from file
-  async function readUsers() {
-    try {
-      const usersFileContent = await fs.readFile(userFile);
-      users = JSON.parse(usersFileContent);
-    } catch (error) {
-      console.error(error);
-    }
-  }
-
-  // read users and set re-reading every 3 minutes
-  readUsers();
-  setInterval(readUsers, 3 * 60 * 1000);
-
-  function processSessionValid(sessionToken) {
-    if (!sessionToken || !sessions[sessionToken]) {
+function createAuthenticator(failedLoginPagePath) {
+  async function processSessionValid(sessionToken) {
+    if (!sessionToken) {
       return false;
     }
 
-    if (!sessions[sessionToken].isExpired()) {
-      return true;
-    } else {
-      // delete session if not valid
-      delete sessions[sessionToken];
+    let bSessionValid = false;
+
+    const oConnection = await connector();
+    const oSession = await oConnection.getSession(sessionToken);
+
+    if (oSession && !oSession.isExpired()) {
+      bSessionValid = true;
+    } else if (oSession) {
+      await oConnection.deleteSession(sessionToken);
     }
 
-    return false;
+    oConnection.end();
+    return bSessionValid;
   }
 
   // route for authentication
-  function authenticator(req, res, next) {
+  async function authenticator(req, res, next) {
     if (req.cookies) {
       // We can obtain the session token from the requests cookies, which come with every request
       const sessionToken = req.cookies["session_token"];
@@ -48,10 +36,11 @@ function createAuthenticator(userFile, failedLoginPagePath) {
 
     // get login page parameters from body
     const { user, password, savesession } = req.body;
+    const oConnection = await connector();
 
     // check if password is valid for user
-    const expectedPassword = users[user];
-    if (!expectedPassword || expectedPassword !== password) {
+    if (!oConnection.authenticateUser(user, password)) {
+      oConnection.end();
       createReadStream(failedLoginPagePath).pipe(res);
       return;
     }
@@ -65,9 +54,15 @@ function createAuthenticator(userFile, failedLoginPagePath) {
 
     // create a session containing information about the user and expiry time
     const session = new Session(user, expiresAt);
-    sessions[session.getToken()] = session;
+    oConnection.createSession(session);
+    oConnection.end();
 
-    res.cookie("session_token", session.getToken(), { expires: expiresAt, sameSite: "strict", secure: true, httpOnly: true });
+    res.cookie("session_token", session.getToken(), {
+      expires: expiresAt,
+      sameSite: "strict",
+      secure: true,
+      httpOnly: true,
+    });
     req.method = "GET";
     next();
   }

@@ -7,10 +7,16 @@ class Connection {
   }
 
   async end() {
+    if (this.mysqlConnection === null) return;
+
     await this.mysqlConnection.end();
+    this.mysqlConnection = null;
   }
 
   async authenticateUser(sUser, sPassword) {
+    if (this.mysqlConnection === null)
+      throw new Error("DB connection is closed");
+
     const sQuery = `select name from user where name = ? and password = sha2(?,256);`;
     const [aUsers, _] = await this.mysqlConnection.query(sQuery, [
       sUser,
@@ -20,7 +26,10 @@ class Connection {
     return aUsers.length > 0;
   }
 
-  async createSession(sUser, oSession) {
+  async createSession(oSession) {
+    if (this.mysqlConnection === null)
+      throw new Error("DB connection is closed");
+
     const oDateTime = oSession.expiresAt;
     const aDateTimeParts = oDateTime.toISOString().split(/(T|\.)/);
     const sDate = aDateTimeParts[0];
@@ -29,11 +38,14 @@ class Connection {
     await this.mysqlConnection.query(sQuery, [
       oSession.token,
       `${sDate} ${sTime}`,
-      sUser,
+      oSession.username,
     ]);
   }
 
   async getSession(sRequestedToken) {
+    if (this.mysqlConnection === null)
+      throw new Error("DB connection is closed");
+
     const sQuery = `select * from session where id = ?;`;
     const [aSessions, _] = await this.mysqlConnection.query(sQuery, [
       sRequestedToken,
@@ -52,11 +64,17 @@ class Connection {
   }
 
   async deleteSession(sRequestedToken) {
+    if (this.mysqlConnection === null)
+      throw new Error("DB connection is closed");
+
     const sQuery = `delete from session where id = ?;`;
     await this.mysqlConnection.query(sQuery, [sRequestedToken]);
   }
 
   async isMaintenance() {
+    if (this.mysqlConnection === null)
+      throw new Error("DB connection is closed");
+
     const sQuery = `select value from config where property = ?;`;
     const [aMaintenance, _] = await this.mysqlConnection.query(sQuery, [
       "maintenance",

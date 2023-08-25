@@ -23,7 +23,6 @@ const createMaintenanceRoute = require("./routes/maintenance");
 require("dotenv").config();
 
 const { authenticator, redirectOnAuthOk } = createAuthenticator(
-  process.env.USERS_FILE,
   "static/login-declined.html"
 );
 
